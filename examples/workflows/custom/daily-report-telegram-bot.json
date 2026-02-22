@@ -1,0 +1,20 @@
+{
+  "name": "Daily Report via Telegram Bot",
+  "description": "Collects daily information and sends via Telegram Bot API (no app interaction needed)",
+  "steps": [
+    {
+      "app": "com.android.calendar",
+      "goal": "Open today's view. Use read_screen to collect all events for today. Copy calendar events to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "app": "com.example.android.notepad",
+      "goal": "Open the app. Use read_screen to collect all notes. Copy notes to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "goal": "Use shell command to send collected information via Telegram Bot API. Format: 'Daily Report [date]' followed by calendar and notes. Command: curl -X POST 'https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage' -d 'chat_id=${TELEGRAM_CHAT_ID}' -d 'text=<collected_info>'",
+      "maxSteps": 5
+    }
+  ]
+}

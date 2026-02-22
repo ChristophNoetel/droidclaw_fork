@@ -1,0 +1,20 @@
+{
+  "name": "Simple Daily Report via Bot",
+  "description": "Collects information from Calendar and Notes, sends via Telegram Bot API",
+  "steps": [
+    {
+      "app": "com.android.calendar",
+      "goal": "Open calendar to today's view. Use read_screen to scroll and collect all today's events. Use clipboard_set to save the calendar data.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.example.android.notepad",
+      "goal": "Open notepad app. Use read_screen to collect all visible notes. Append notes to clipboard using clipboard_set.",
+      "maxSteps": 10
+    },
+    {
+      "goal": "Read clipboard content using clipboard_get. Then use shell command: 'curl -X POST https://api.telegram.org/bot[TOKEN]/sendMessage -d chat_id=[CHAT_ID] -d text=[CLIPBOARD]' to send the collected information. Make sure to properly escape the text.",
+      "maxSteps": 5
+    }
+  ]
+}

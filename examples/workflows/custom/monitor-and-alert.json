@@ -1,0 +1,24 @@
+{
+  "name": "Monitor App and Send Alerts",
+  "description": "Monitors a specific app for notifications/updates and sends alerts via WhatsApp",
+  "steps": [
+    {
+      "app": "com.example.targetapp",
+      "goal": "Open the app. Navigate to notifications or updates section. Use read_screen to scroll through and collect all new notifications or updates. Copy the collected information to clipboard.",
+      "maxSteps": 20
+    },
+    {
+      "goal": "Check if clipboard contains meaningful content (not empty). If there are new notifications, proceed to WhatsApp.",
+      "maxSteps": 2
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Search for contact 'YOUR_NAME_HERE'. Open the chat. Type '🔔 App Alert:' followed by a newline. Paste the notifications from clipboard. Use submit_message to send.",
+      "maxSteps": 15,
+      "formData": {
+        "Contact": "YOUR_NAME_HERE",
+        "MessagePrefix": "🔔 App Alert"
+      }
+    }
+  ]
+}

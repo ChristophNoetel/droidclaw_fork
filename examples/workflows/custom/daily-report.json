@@ -1,0 +1,30 @@
+{
+  "name": "Daily Information Report",
+  "description": "Collects daily information from multiple apps and sends a summary via WhatsApp",
+  "steps": [
+    {
+      "app": "com.google.android.gm",
+      "goal": "Search for unread emails. Use read_screen to collect subject lines and preview text. Copy all unread email information to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.google.android.calendar",
+      "goal": "Open today's date. Use read_screen to collect all events for today. Copy calendar events to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'weather today'. Read the temperature and forecast. Copy weather information to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Search for contact 'YOUR_NAME_HERE'. Open the chat. Type 'Daily Report:' followed by newline. Then paste the summary of emails, calendar, and weather from clipboard. Use submit_message to send the message.",
+      "maxSteps": 20,
+      "formData": {
+        "Contact": "YOUR_NAME_HERE",
+        "MessagePrefix": "📊 Daily Report"
+      }
+    }
+  ]
+}
