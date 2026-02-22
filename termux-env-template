@@ -1,0 +1,40 @@
+# ===========================================
+# DroidClaw Configuration for Termux on Honor 10
+# ===========================================
+
+# ===========================================
+# LLM Provider Configuration
+# ===========================================
+LLM_PROVIDER=groq
+
+# ===========================================
+# Groq Configuration
+# ===========================================
+GROQ_API_KEY=YOUR_GROQ_API_KEY_HERE
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# ===========================================
+# Telegram Bot Configuration
+# ===========================================
+TELEGRAM_BOT_TOKEN=7935511874:AAHb1WHPY9rOkPmYtGXtk8H0_dbM3frEirw
+TELEGRAM_CHAT_ID=1476586973
+
+# ===========================================
+# Agent Behavior
+# ===========================================
+MAX_STEPS=30
+STEP_DELAY=2
+STUCK_THRESHOLD=3
+VISION_MODE=fallback
+
+# ===========================================
+# Performance Tuning
+# ===========================================
+MAX_ELEMENTS=40
+MAX_HISTORY_STEPS=10
+
+# ===========================================
+# Logging
+# ===========================================
+LOG_LEVEL=info
+SAVE_SCREENSHOTS=true

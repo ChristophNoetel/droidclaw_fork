@@ -1,0 +1,22 @@
+# === COPY AND PASTE THESE COMMANDS INTO TERMUX ===
+# Each block is a separate command - paste and press Enter
+
+# 1. Grant storage access (if not already done)
+termux-setup-storage
+
+# 2. Copy setup script from storage and run it
+cp /sdcard/termux-auto-setup.sh ~/setup.sh && chmod +x ~/setup.sh && ~/setup.sh
+
+# === THAT'S IT! ===
+# The script will now:
+#  - Update packages
+#  - Install git, curl, nodejs, jq
+#  - Install Bun runtime
+#  - Clone DroidClaw
+#  - Install 932 dependencies
+#  - Copy .env configuration
+#  - Set up Telegram listener
+#  - Install screen
+#
+# This takes about 10-15 minutes total
+# You'll see progress messages as it runs
