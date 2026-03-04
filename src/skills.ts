@@ -55,8 +55,19 @@ export function executeSkill(
  * Wrapping in single quotes and escaping internal quotes fixes this.
  */
 function safeClipboardSet(text: string): void {
-  const escaped = text.replaceAll("'", "'\\''");
-  runAdbCommand(["shell", `cmd clipboard set-text '${escaped}'`]);
+  // Limit size
+  if (text.length > 1024 * 1024) {
+    console.log("Warning: Clipboard text truncated to 1MB");
+    text = text.slice(0, 1024 * 1024);
+  }
+
+  // Base64 encode to bypass shell parsing
+  const encoded = Buffer.from(text, 'utf-8').toString('base64');
+
+  runAdbCommand([
+    "shell",
+    `echo '${encoded}' | base64 -d | cmd clipboard set-text`
+  ]);
 }
 
 function rescanScreen(): UIElement[] {

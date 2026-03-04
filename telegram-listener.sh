@@ -65,21 +65,29 @@ I'll send you the results when done!" > /dev/null
                 continue
             fi
 
+            # Validate input to prevent command injection
+            if echo "$MESSAGE_TEXT" | grep -qE '[;&|`$()]'; then
+                curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+                    --data-urlencode "text=⚠️ Error: Message contains forbidden characters" > /dev/null
+                continue  # Skip this message
+            fi
+
             echo "📨 Received command: $MESSAGE_TEXT"
 
             # Send acknowledgment
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-                -d "chat_id=${TELEGRAM_CHAT_ID}" \
-                -d "text=⚙️ Processing: $MESSAGE_TEXT" > /dev/null
+                --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+                --data-urlencode "text=⚙️ Processing: $MESSAGE_TEXT" > /dev/null
 
             # Execute DroidClaw with the goal
             echo "🤖 Executing DroidClaw..."
-            RESULT=$(echo "$MESSAGE_TEXT" | timeout 180 /c/Users/I526653/.bun/bin/bun.exe run src/kernel.ts 2>&1 | tail -50)
+            RESULT=$(printf '%s\n' "$MESSAGE_TEXT" | timeout 180 /c/Users/I526653/.bun/bin/bun.exe run src/kernel.ts 2>&1 | tail -50)
 
             # Check if execution was successful
             if [ $? -eq 0 ]; then
                 # Extract the final result (last few lines)
-                SUMMARY=$(echo "$RESULT" | grep -E "(Success|Done|Completed|Result)" | tail -5)
+                SUMMARY=$(printf '%s\n' "$RESULT" | grep -E "(Success|Done|Completed|Result)" | tail -5)
 
                 if [ -z "$SUMMARY" ]; then
                     SUMMARY="Task completed. Check device for results."
@@ -87,8 +95,8 @@ I'll send you the results when done!" > /dev/null
 
                 # Send results back
                 curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-                    -d "chat_id=${TELEGRAM_CHAT_ID}" \
-                    -d "text=✅ Completed: $MESSAGE_TEXT
+                    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+                    --data-urlencode "text=✅ Completed: $MESSAGE_TEXT
 
 Result:
 $SUMMARY" > /dev/null
@@ -97,8 +105,8 @@ $SUMMARY" > /dev/null
             else
                 # Send error message
                 curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-                    -d "chat_id=${TELEGRAM_CHAT_ID}" \
-                    -d "text=❌ Error executing: $MESSAGE_TEXT
+                    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+                    --data-urlencode "text=❌ Error executing: $MESSAGE_TEXT
 
 The task timed out or encountered an error. Check device connection." > /dev/null
 

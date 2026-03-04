@@ -313,9 +313,39 @@ function executeTap(action: ActionDecision): ActionResult {
   return { success: true, message: `Tapped (${x}, ${y})` };
 }
 
+/**
+ * Validates text input for typing to prevent injection.
+ */
+function validateTypeText(text: string): { valid: boolean; error?: string } {
+  // Reject null bytes and control characters (except tab, newline, CR)
+  const ALLOWED_CONTROL = new Set([9, 10, 13]);
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 32 && !ALLOWED_CONTROL.has(code)) {
+      return { valid: false, error: "Text contains forbidden control characters" };
+    }
+    if (code === 0) {
+      return { valid: false, error: "Text contains null bytes" };
+    }
+  }
+
+  // Limit length to 10KB
+  if (text.length > 10 * 1024) {
+    return { valid: false, error: "Text too long (max 10KB)" };
+  }
+
+  return { valid: true };
+}
+
 function executeType(action: ActionDecision): ActionResult {
   const text = action.text ?? "";
   if (!text) return { success: false, message: "No text to type" };
+
+  // Validate text
+  const validation = validateTypeText(text);
+  if (!validation.valid) {
+    return { success: false, message: `Invalid text: ${validation.error}` };
+  }
 
   // If coordinates are provided, tap the field first to focus it
   if (action.coordinates) {
@@ -517,11 +547,24 @@ function executeClipboardGet(): ActionResult {
 function executeClipboardSet(action: ActionDecision): ActionResult {
   const text = action.text ?? "";
   if (!text) return { success: false, message: "No text to set on clipboard" };
+
+  // Limit clipboard size (1MB reasonable max)
+  if (text.length > 1024 * 1024) {
+    return { success: false, message: "Text too large for clipboard (max 1MB)" };
+  }
+
   console.log(`Setting clipboard: ${text.slice(0, 50)}...`);
-  // Safe shell escaping: wrap in single quotes, escape internal ' as '\''
-  // This matches safeClipboardSet() in skills.ts
-  const escaped = text.replaceAll("'", "'\\''");
-  runAdbCommand(["shell", `cmd clipboard set-text '${escaped}'`]);
+
+  // Use base64 encoding to avoid all shell parsing issues
+  const encoded = Buffer.from(text, 'utf-8').toString('base64');
+
+  // Decode on device and pipe to clipboard
+  // This avoids ALL shell metacharacter interpretation
+  runAdbCommand([
+    "shell",
+    `echo '${encoded}' | base64 -d | cmd clipboard set-text`
+  ]);
+
   return { success: true, message: `Clipboard set to "${text.slice(0, 50)}"` };
 }
 
@@ -697,9 +740,10 @@ function executeOpenSettings(action: ActionDecision): ActionResult {
  * Runs an arbitrary ADB shell command. Use sparingly for edge cases.
  */
 function executeShell(action: ActionDecision): ActionResult {
-  const cmd = action.command ?? "";
-  if (!cmd) return { success: false, message: "No command provided" };
-  console.log(`Shell: ${cmd}`);
-  const result = runAdbCommand(["shell", ...cmd.split(" ")]);
-  return { success: true, message: `Shell output: ${result.slice(0, 200)}`, data: result };
+  // SECURITY: This function is disabled due to command injection risks.
+  // Use high-level actions (launch, type, tap, etc.) instead.
+  return {
+    success: false,
+    message: "Shell action is disabled for security. Use specific actions like launch, type, or tap."
+  };
 }

@@ -22,13 +22,38 @@ DEVICE_MODEL=$(adb shell getprop ro.product.model 2>/dev/null | tr -d '\r')
 echo "✅ Device connected: $DEVICE_MODEL"
 echo ""
 
-# Function to run command in Termux
+# Function to run command in Termux with security validation
 run_in_termux() {
     local cmd="$1"
+
+    # Validate command doesn't contain suspicious patterns
+    if echo "$cmd" | grep -qE '[;&|`$(){}<>]'; then
+        echo "   ERROR: Command contains forbidden characters"
+        return 1
+    fi
+
+    # Use printf %q for proper shell escaping
+    local escaped_cmd=$(printf '%q' "$cmd")
+
     echo "   Running: $cmd"
-    adb shell "su -c 'echo \"$cmd\" | /data/data/com.termux/files/usr/bin/bash'" 2>/dev/null || \
-    adb shell "am broadcast -a com.termux.app.RUN_COMMAND -e com.termux.RUN_COMMAND_PATH /data/data/com.termux/files/usr/bin/bash -e com.termux.RUN_COMMAND_ARGUMENTS '-c,$cmd' -e com.termux.RUN_COMMAND_WORKDIR /data/data/com.termux/files/home" 2>/dev/null || \
-    adb shell "run-as com.termux /data/data/com.termux/files/usr/bin/bash -c '$cmd'" 2>/dev/null
+
+    # Try methods in order of preference
+    # Method 1: su (if device is rooted)
+    adb shell "su -c 'cd /data/data/com.termux/files/home && ${escaped_cmd}'" 2>/dev/null && return 0
+
+    # Method 2: am broadcast with properly escaped command
+    adb shell "am broadcast \
+        -a com.termux.app.RUN_COMMAND \
+        -n com.termux/com.termux.app.RunCommandService \
+        --es com.termux.RUN_COMMAND_PATH '/data/data/com.termux/files/usr/bin/bash' \
+        --esa com.termux.RUN_COMMAND_ARGUMENTS '-c,${escaped_cmd}' \
+        --es com.termux.RUN_COMMAND_WORKDIR '/data/data/com.termux/files/home'" 2>/dev/null && return 0
+
+    # Method 3: run-as (fallback)
+    adb shell "run-as com.termux /data/data/com.termux/files/usr/bin/bash -c '${escaped_cmd}'" 2>/dev/null && return 0
+
+    echo "   ERROR: All execution methods failed"
+    return 1
 }
 
 # Step 1: Launch Termux

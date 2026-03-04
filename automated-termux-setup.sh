@@ -90,17 +90,25 @@ while true; do
       MESSAGE_TEXT=$(echo "$UPDATES" | jq -r ".result[$i].message.text // empty")
 
       if [ ! -z "$MESSAGE_TEXT" ] && [ "$MESSAGE_TEXT" != "null" ]; then
+        # Validate input to prevent command injection
+        if echo "$MESSAGE_TEXT" | grep -qE '[;&|`$()]'; then
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=⚠️ Error: Message contains forbidden characters"
+          continue  # Skip this message
+        fi
+
         echo "📩 Received: $MESSAGE_TEXT"
 
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-          -d "chat_id=${TELEGRAM_CHAT_ID}" \
-          -d "text=🤖 Processing: $MESSAGE_TEXT..."
+          --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+          --data-urlencode "text=🤖 Processing: $MESSAGE_TEXT..."
 
-        RESULT=$(echo "$MESSAGE_TEXT" | timeout 300 ~/.bun/bin/bun run src/kernel.ts 2>&1 | tail -20)
+        RESULT=$(printf '%s\n' "$MESSAGE_TEXT" | timeout 300 ~/.bun/bin/bun run src/kernel.ts 2>&1 | tail -20)
 
         curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-          -d "chat_id=${TELEGRAM_CHAT_ID}" \
-          -d "text=✅ Completed: $MESSAGE_TEXT"
+          --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+          --data-urlencode "text=✅ Completed: $MESSAGE_TEXT"
       fi
 
       LAST_UPDATE_ID=$UPDATE_ID
