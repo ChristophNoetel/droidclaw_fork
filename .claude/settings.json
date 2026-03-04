@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill //F //IM git.exe)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\I526653\\.claude\\plans"
+    ]
+  }
+}
