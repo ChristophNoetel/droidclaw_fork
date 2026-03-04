@@ -210,6 +210,99 @@ export async function runPipeline(
   const classResult = await classifyGoal(goal, caps, llmConfig);
   console.log(`[Pipeline] Stage 2 (Classifier): ${classResult.type}`);
 
+  if (classResult.type === "scheduled") {
+    const { getQStashClient, getCallbackUrl } = await import("../qstash.js");
+    const qstash = getQStashClient();
+
+    if (!qstash) {
+      console.warn("[Pipeline] QStash not configured, executing goal immediately with cleaned goal");
+      // Re-classify the cleaned goal (without time reference) so it routes correctly
+      const cleanedClassResult = await classifyGoal(classResult.goal, caps, llmConfig);
+      console.log(`[Pipeline] Re-classified cleaned goal: ${cleanedClassResult.type}`);
+      // Recursively handle the cleaned result by falling through with the original pipeline
+      // For simplicity, just run the UI agent with the cleaned goal
+      const loopResult = await runAgentLoop({
+        deviceId,
+        persistentDeviceId,
+        userId,
+        goal: classResult.goal,
+        originalGoal: goal,
+        llmConfig,
+        maxSteps,
+        signal,
+        pipelineMode: true,
+        onStep,
+        onComplete,
+      });
+      return { ...loopResult, resolvedBy: "ui_agent" };
+    } else {
+      // Persist the scheduled session in DB
+      const sessionId = crypto.randomUUID();
+      const scheduledFor = new Date(Date.now() + classResult.delay * 1000);
+
+      if (persistentDeviceId) {
+        await db.insert(agentSession).values({
+          id: sessionId,
+          userId,
+          deviceId: persistentDeviceId,
+          goal: classResult.goal,
+          status: "scheduled",
+          stepsUsed: 0,
+          qstashMessageId: null,
+          scheduledFor,
+          scheduledDelay: classResult.delay,
+        });
+      }
+
+      // Publish to QStash with delay
+      const result = await qstash.publishJSON({
+        url: getCallbackUrl(),
+        body: {
+          sessionId,
+          deviceId: persistentDeviceId ?? deviceId,
+          userId,
+          goal: classResult.goal,
+        },
+        delay: classResult.delay,
+      });
+
+      // Store the QStash message ID for cancellation
+      if (persistentDeviceId && result.messageId) {
+        await db
+          .update(agentSession)
+          .set({ qstashMessageId: result.messageId })
+          .where(eq(agentSession.id, sessionId));
+      }
+
+      // Notify dashboard (web)
+      sessions.notifyDashboard(userId, {
+        type: "goal_scheduled",
+        sessionId,
+        goal: classResult.goal,
+        scheduledFor: scheduledFor.toISOString(),
+        delay: classResult.delay,
+      });
+
+      // Notify device — send goal_scheduled, NOT goal_completed
+      const device = sessions.getDevice(deviceId);
+      if (device) {
+        try {
+          device.ws.send(JSON.stringify({
+            type: "goal_scheduled",
+            goal: classResult.goal,
+            scheduledFor: scheduledFor.toISOString(),
+            delay: classResult.delay,
+          }));
+        } catch { /* disconnected */ }
+      }
+
+      // NOTE: Do NOT call onComplete here — that sends goal_completed to the device,
+      // which would make the app show "completed" before execution actually happens.
+      console.log(`[Pipeline] Goal scheduled via QStash: "${classResult.goal}" in ${classResult.delay}s`);
+      return { success: true, stepsUsed: 0, sessionId, resolvedBy: "classifier" };
+    }
+  }
+
   if (classResult.type === "done") {
     const sessionId = persistentDeviceId
       ? await persistQuickSession(userId, persistentDeviceId, goal, "classifier", { done: true, reason: classResult.reason })

@@ -104,6 +104,16 @@ export const llmConfig = pgTable("llm_config", {
     .notNull(),
 });
 
+export const pairingCode = pgTable("pairing_code", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const device = pgTable("device", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -129,6 +139,10 @@ export const agentSession = pgTable("agent_session", {
   stepsUsed: integer("steps_used").default(0),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
+  // Scheduling (QStash)
+  qstashMessageId: text("qstash_message_id"),
+  scheduledFor: timestamp("scheduled_for"),
+  scheduledDelay: integer("scheduled_delay"),
 });
 
 export const agentStep = pgTable("agent_step", {
@@ -141,5 +155,19 @@ export const agentStep = pgTable("agent_step", {
   action: jsonb("action"),
   reasoning: text("reasoning"),
   result: text("result"),
+  packageName: text("package_name"),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const appHint = pgTable("app_hint", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  packageName: text("package_name").notNull(),
+  hint: text("hint").notNull(),
+  sourceSessionId: text("source_session_id").references(() => agentSession.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
