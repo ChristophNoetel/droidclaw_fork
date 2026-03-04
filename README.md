@@ -499,6 +499,64 @@ built by [unitedby.ai](https://unitedby.ai) — an open ai community
 - [sanju sivalingam](https://sanju.sh)
 - [somasundaram mahesh](https://msomu.com)
 
+## custom scripts (fork additions)
+
+this fork includes additional automation scripts in `scripts/`:
+
+### telegram remote control
+
+control your android device remotely via telegram bot.
+
+**setup:**
+
+1. create a telegram bot via [@BotFather](https://t.me/BotFather)
+2. add to `.env`:
+
+   ```bash
+   TELEGRAM_BOT_TOKEN=your_bot_token
+   TELEGRAM_CHAT_ID=your_chat_id
+   ```
+
+**scripts:**
+
+| script | description |
+|--------|-------------|
+| `scripts/telegram-listener.sh` | polls telegram for commands, executes them via droidclaw, sends results back |
+| `scripts/send-telegram-message.sh` | send a message to telegram from command line |
+
+**usage:**
+
+```bash
+# start the listener (runs continuously)
+./scripts/telegram-listener.sh
+
+# send a message
+./scripts/send-telegram-message.sh "Hello from DroidClaw"
+```
+
+then message your bot: "open youtube and search lofi" — it executes on your phone and reports back.
+
+### weather automation
+
+automated daily weather reports.
+
+| script | description |
+|--------|-------------|
+| `scripts/daily-munich-weather.sh` | gets munich weather via droidclaw workflow, sends to telegram |
+| `scripts/test-weather-simple.sh` | quick test for weather functionality |
+
+**usage:**
+
+```bash
+# run manually
+./scripts/daily-munich-weather.sh
+
+# or schedule with cron (9am daily)
+0 9 * * * /path/to/scripts/daily-munich-weather.sh
+```
+
+---
+
 ## license
 
 mit

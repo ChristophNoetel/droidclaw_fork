@@ -1,11 +1,13 @@
 #!/bin/bash
 # Simple test for Munich weather workflow
 
-cd /c/Users/I526653/Documents/GitHub/personal_cnoetel/DroidClaw
+cd "$(dirname "$0")/.."
 
-# Set environment variables directly
-export TELEGRAM_BOT_TOKEN="7935511874:AAHb1WHPY9rOkPmYtGXtk8H0_dbM3frEirw"
-export TELEGRAM_CHAT_ID="1476586973"
+# Load environment variables from .env
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 export PATH="/c/Users/I526653/platform-tools/platform-tools:$PATH"
 
 echo "Testing Munich weather workflow..."
